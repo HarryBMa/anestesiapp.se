@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlodgasRouteImport } from './routes/blodgas'
 import { Route as LugnRouteImport } from './routes/lugn'
+import { Route as StewartRouteImport } from './routes/stewart'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const LugnRoute = LugnRouteImport.update({
   path: '/lugn',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StewartRoute = StewartRouteImport.update({
+  id: '/stewart',
+  path: '/stewart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
+  '/stewart': typeof StewartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
+  '/stewart': typeof StewartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
+  '/stewart': typeof StewartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/blodgas' | '/lugn'
+  fullPaths: '/' | '/blodgas' | '/lugn' | '/stewart'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blodgas' | '/lugn'
-  id: '__root__' | '/' | '/blodgas' | '/lugn'
+  to: '/' | '/blodgas' | '/lugn' | '/stewart'
+  id: '__root__' | '/' | '/blodgas' | '/lugn' | '/stewart'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlodgasRoute: typeof BlodgasRoute
   LugnRoute: typeof LugnRoute
+  StewartRoute: typeof StewartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LugnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stewart': {
+      id: '/stewart'
+      path: '/stewart'
+      fullPath: '/stewart'
+      preLoaderRoute: typeof StewartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlodgasRoute: BlodgasRoute,
   LugnRoute: LugnRoute,
+  StewartRoute: StewartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

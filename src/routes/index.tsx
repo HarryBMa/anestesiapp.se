@@ -27,6 +27,9 @@ function Home() {
         <a className="button" href="/blodgas">
           Blodgas
         </a>
+        <a className="button" href="/stewart">
+          Stewart
+        </a>
         <a className="button" href="/lugn">
           Lugn
         </a>

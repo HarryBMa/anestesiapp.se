@@ -1,0 +1,87 @@
+/*
+ * Styles for the Stewart page. Yours to write.
+ *
+ * Everything is nested under .stewart, so nothing leaks into other pages.
+ *
+ * Page structure:
+ *   .stewart .step            the three numbered sections
+ *   .stewart .file            the photo button (a <label> around a file input)
+ *   .stewart .status          OCR progress and result messages
+ *   .stewart .privacy         the privacy note
+ *   .stewart table.values     the value table; each <tr> has
+ *                               data-flag="scanned" | "check" | "manual"
+ *   .stewart .confirm         the "I have checked" checkbox
+ *   .stewart dl.numbers       SIDa, SIDe, SIG, albumin charge
+ *   .stewart ul.reading       the plain-language interpretation
+ *   .stewart .gamblegram      the diagram (an <svg>) and its key
+ *   .stewart table.partition  the base-excess partition; each <tr> has
+ *                               data-sign="acid" | "base" | "zero"
+ *   .stewart .disclaimer      the footer note
+ */
+
+/* ── Diagram colours ─────────────────────────────────────────────────────
+ * The one part that has to be styled for the diagram to be readable at all.
+ * Three colours, one per role, checked for colour-blind separation; the
+ * strong ion gap is hatched instead of a fourth colour. Change them freely,
+ * but keep the three clearly different from each other.
+ */
+.stewart {
+  --cation: #2a78d6;
+  --strong-anion: #eb6834;
+  --buffer: #1baf7a;
+  --sig-line: #52514e;
+}
+@media (prefers-color-scheme: dark) {
+  .stewart {
+    --cation: #3987e5;
+    --strong-anion: #d95926;
+    --buffer: #199e70;
+    --sig-line: #c3c2b7;
+  }
+}
+
+/* Hide the real file input; the <label> around it is the button. */
+.stewart .file input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.stewart .gamblegram svg {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  font-size: 13px;
+  fill: currentColor;
+}
+.stewart .gamblegram .segment[data-group="cation"] { fill: var(--cation); }
+.stewart .gamblegram .segment[data-group="strong"] { fill: var(--strong-anion); }
+.stewart .gamblegram .segment[data-group="buffer"] { fill: var(--buffer); }
+.stewart .gamblegram .segment[data-group="sig"] {
+  fill: url(#sig-hatch);
+  stroke: var(--sig-line);
+}
+.stewart .gamblegram .hatch { stroke: var(--sig-line); stroke-width: 2; }
+.stewart .gamblegram .leader,
+.stewart .gamblegram .bracket path {
+  stroke: currentColor;
+  opacity: 0.5;
+}
+
+/* Key swatches under the diagram. */
+.stewart .key::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.3em;
+  vertical-align: -0.05em;
+  background: var(--swatch);
+}
+.stewart .key[data-group="cation"] { --swatch: var(--cation); }
+.stewart .key[data-group="strong"] { --swatch: var(--strong-anion); }
+.stewart .key[data-group="buffer"] { --swatch: var(--buffer); }
+.stewart .key[data-group="sig"] {
+  --swatch: repeating-linear-gradient(45deg, var(--sig-line) 0 2px, transparent 2px 5px);
+}
