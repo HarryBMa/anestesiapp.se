@@ -8,6 +8,7 @@ keeps living on the same domain under each unit's address (`/nks-hh`, `/orto` �
 |---|---|
 | `/` | Homepage: lists the apps. An installed Förrådet PWA that launches here (`/?source=pwa`) is forwarded to its unit. |
 | `/blodgas` | Blood gas interpretation: compensation, albumin-corrected anion gap, delta ratio, P/F, A–a gradient. kPa or mmHg. |
+| `/stewart` | Stewart acid–base analysis from a photo of an ABL90 FLEX PLUS printout, read on the device. Gamblegram and base-excess partition. |
 | `/lugn` | Patient-facing calm player: generated scenes and sound, breathing guide, optional videos. Swedish/English. |
 
 Everything runs in the browser. No patient data is stored or sent.
@@ -31,9 +32,12 @@ building blocks as special-lamp, without the server rendering.
 | `src/routes/` | One file per page. The file name is the URL: `blodgas.tsx` → `/blodgas`. `__root.tsx` is the shared layout. |
 | `src/lib/abg.ts` | Blood gas interpretation as pure functions. Read it top to bottom: it follows the stepwise method. |
 | `src/lib/abg.test.ts` | Textbook cases the interpreter must get right. Add a case here before changing a rule. |
+| `src/lib/stewart.ts` | Stewart model: SIDa, SIDe, SIG, Figge weak-acid charges, Fencl–Story partition. |
+| `src/lib/abl90.ts` | Reads analyte values out of OCR text from an ABL90 printout (allow-list: name and personnummer are never extracted). |
+| `src/lib/ocr.ts` | On-device OCR (Tesseract, WebAssembly) with image clean-up for thermal paper. |
 | `src/lib/soundscape.ts` | Generated ambient sound (Web Audio API). |
 | `src/config/videos.ts` | Videos offered in Lugn. Empty until you add some. |
-| `src/routes/index.css` | The homepage's own styles. |
+| `src/routes/index.css`, `src/routes/stewart.css` | Each page's own styles. |
 | `src/styles.css` | Colour tokens and shared animations used by the tool pages. |
 
 **Adding a tool:** create `src/routes/<name>.tsx` (copy the shape of
@@ -52,7 +56,7 @@ forwards the homepage's paths to it, ahead of its own routes:
 
 ```json
 { "src": "/", "dest": "https://<this-project>.vercel.app/" },
-{ "src": "/(blodgas|lugn)(/.*)?", "dest": "https://<this-project>.vercel.app/$1$2" },
+{ "src": "/(blodgas|lugn|stewart)(/.*)?", "dest": "https://<this-project>.vercel.app/$1$2" },
 { "src": "/(hem-assets/.*|hem-icon\\.svg)", "dest": "https://<this-project>.vercel.app/$1" },
 ```
 
