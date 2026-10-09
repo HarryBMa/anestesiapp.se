@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/*
+ * Tokens. Same vocabulary as Förrådet (special-lamp): warm parchment in light
+ * mode, near-black in dark, and the chart-* hues that colour the blobs.
+ * light-dark() picks the value from the active color-scheme, so the whole
+ * theme follows the system setting without a single media query per colour.
+ */
+:root {
+  color-scheme: light dark;
+
+  --background: light-dark(oklch(0.928 0.034 95), oklch(0.19 0.008 85));
+  --foreground: light-dark(oklch(0.22 0.012 85), oklch(0.95 0.012 90));
+  --card: light-dark(oklch(0.965 0.02 95), oklch(0.235 0.01 85));
+  --muted-foreground: light-dark(oklch(0.45 0.02 85), oklch(0.76 0.015 90));
+  --border: light-dark(oklch(0.82 0.03 90), oklch(0.34 0.01 85));
+  --primary: light-dark(oklch(0.24 0.012 85), oklch(0.93 0.02 90));
+  --primary-foreground: light-dark(oklch(0.96 0.02 95), oklch(0.2 0.01 85));
+  --ring: light-dark(oklch(0.5 0.12 45), oklch(0.75 0.12 70));
+
+  /* Status colours for interpretation results (AA on --card in both modes). */
+  --ok: light-dark(oklch(0.45 0.1 155), oklch(0.8 0.12 155));
+  --warn: light-dark(oklch(0.48 0.12 65), oklch(0.82 0.13 80));
+  --alert: light-dark(oklch(0.5 0.19 28), oklch(0.74 0.15 28));
+
+  --chart-1: light-dark(oklch(0.72 0.17 55), oklch(0.55 0.15 50));
+  --chart-2: light-dark(oklch(0.65 0.11 185), oklch(0.52 0.1 185));
+  --chart-3: light-dark(oklch(0.6 0.08 140), oklch(0.48 0.08 140));
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-alert: var(--alert);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@layer base {
+  html {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  /* Numbers line up in tables and inputs. */
+  input,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Width axis of Archivo: wide for display headings, narrow for dense labels. */
+.font-wide {
+  font-stretch: 125%;
+}
+.font-narrow {
+  font-stretch: 75%;
+}
+
+/* Ambient blobs: slow, background-only. */
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, 110px) scale(1.2); }
+  66% { transform: translate(-30px, 40px) scale(0.9); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(-150px, -90px) scale(1.35); }
+  70% { transform: translate(-40px, 60px) scale(1); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1.15); }
+  50% { transform: translate(-20px, 200px) scale(1); }
+}
+.animate-drift-a { animation: drift-a 28s ease-in-out infinite; }
+.animate-drift-b { animation: drift-b 34s ease-in-out infinite; }
+.animate-drift-c { animation: drift-c 40s ease-in-out infinite; }
+
+/* Page-load reveal, staggered via --i. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.rise {
+  animation: rise 600ms var(--ease-out-quart) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift-a,
+  .animate-drift-b,
+  .animate-drift-c,
+  .rise {
+    animation: none;
+  }
+}

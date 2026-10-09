@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/((?!hem-assets/).*)", "destination": "/index.html" }],
+  "headers": [
+    {
+      "source": "/hem-assets/(.*)",
+      "headers": [{ "key": "cache-control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
