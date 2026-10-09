@@ -1,5 +1,4 @@
 import { createRootRoute, Link, Outlet, useRouterState } from '@tanstack/react-router';
-import { GrainyBackground } from '../components/GrainyBackground';
 
 export const Route = createRootRoute({
   component: Root,
@@ -7,13 +6,12 @@ export const Route = createRootRoute({
 });
 
 function Root() {
-  // The relaxation player is patient-facing and full-screen: no site chrome.
+  // The homepage and the full-screen relaxation player have no site chrome.
   const path = useRouterState({ select: s => s.location.pathname });
-  const bare = path.startsWith('/lugn');
+  const bare = path === '/' || path.startsWith('/lugn');
 
   return (
     <>
-      {!bare && <GrainyBackground />}
       {!bare && (
         <header className="mx-auto flex max-w-5xl items-center justify-between px-4 pt-5 sm:px-8">
           <Link

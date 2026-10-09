@@ -1,0 +1,27 @@
+/*
+ * Styles for the homepage. Yours to write.
+ *
+ * Everything is nested under .home (the <main> element), so nothing here
+ * leaks into the other pages.
+ *
+ * Elements on the page:
+ *   .home            the whole page
+ *   .home h1         the heading
+ *   .home nav        the group of buttons
+ *   .home .button    each button
+ *
+ * Note: Tailwind's reset is loaded for the whole site, so headings and links
+ * start out completely plain (no default sizes, colours or underlines).
+ */
+
+.home {
+}
+
+.home h1 {
+}
+
+.home nav {
+}
+
+.home .button {
+}
