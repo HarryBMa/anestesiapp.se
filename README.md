@@ -10,6 +10,7 @@ keeps living on the same domain under each unit's address (`/nks-hh`, `/orto` �
 | `/blodgas` | Blood gas interpretation: compensation, albumin-corrected anion gap, delta ratio, P/F, A–a gradient. kPa or mmHg. |
 | `/stewart` | Stewart acid–base analysis from a photo of an ABL90 FLEX PLUS printout, read on the device. Gamblegram and base-excess partition. |
 | `/lugn` | Patient-facing calm player: generated scenes and sound, breathing guide, optional videos. Swedish/English. |
+| `/tessa` | Setup page for the TESSA Dagblad corridor TV: bookmarklets that run `public/tessa/narkos-dagblad.js` inside the TESSA tab. |
 
 Everything runs in the browser. No patient data is stored or sent.
 
@@ -39,6 +40,7 @@ building blocks as special-lamp, without the server rendering.
 | `src/config/videos.ts` | Videos offered in Lugn. Empty until you add some. |
 | `src/routes/index.css`, `src/routes/stewart.css` | Each page's own styles. |
 | `src/styles.css` | Colour tokens and shared animations used by the tool pages. |
+| `public/tessa/narkos-dagblad.js` | The TESSA Dagblad portrait-TV overlay. Plain JavaScript, read-only, runs in the TESSA tab. Use only `/* */` comments: the standalone bookmarklet puts it on one line. Served with `no-cache` so the loader always gets the latest version. |
 
 **Adding a tool:** create `src/routes/<name>.tsx` (copy the shape of
 `blodgas.tsx`), add a button on the homepage in `src/routes/index.tsx`, and
@@ -56,7 +58,7 @@ forwards the homepage's paths to it, ahead of its own routes:
 
 ```json
 { "src": "/", "dest": "https://<this-project>.vercel.app/" },
-{ "src": "/(blodgas|lugn|stewart)(/.*)?", "dest": "https://<this-project>.vercel.app/$1$2" },
+{ "src": "/(blodgas|lugn|stewart|tessa)(/.*)?", "dest": "https://<this-project>.vercel.app/$1$2" },
 { "src": "/(hem-assets/.*|hem-icon\\.svg)", "dest": "https://<this-project>.vercel.app/$1" },
 ```
 
@@ -72,5 +74,5 @@ Why this way round:
 - Rolling back means deleting three lines.
 
 Before that change goes live, special-lamp should also treat `blodgas`,
-`lugn` and `hem-assets` as reserved, so no unit can take those slugs. No
+`lugn`, `stewart`, `tessa` and `hem-assets` as reserved, so no unit can take those slugs. No
 current unit uses them.
