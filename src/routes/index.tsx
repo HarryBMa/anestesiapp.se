@@ -13,11 +13,19 @@ export const Route = createFileRoute('/')({
  * and `{...}` inserts a JavaScript value (like `unit.name` below).
  */
 function Home() {
-  const unit = useStoredUnit();
+  const { unit, strandedApp } = useStoredUnit();
 
   return (
     <main className="home">
       <h1>AnestesiApp</h1>
+
+      {strandedApp && (
+        <p className="notice" role="status">
+          Förrådet-appen öppnades här i stället för på din enhet. Ta bort appen från
+          hemskärmen, öppna din enhets länk (t.ex. anestesiapp.se/din-enhet) och
+          lägg till den på hemskärmen igen. Då öppnas den direkt på enheten.
+        </p>
+      )}
 
       <nav>
         {/* Förrådet is a separate app, so it gets a normal link. */}
@@ -42,11 +50,14 @@ function Home() {
  * Förrådet remembers the user's unit in localStorage under `currentUnit`.
  * Both apps live on www.anestesiapp.se, so the homepage can read it.
  *
- * The installed Förrådet app opens at "/?source=pwa"; that launch is sent
- * straight on to the unit, so installed apps keep working.
+ * Older installs of the Förrådet app open at "/?source=pwa"; that launch is
+ * sent straight on to the unit. On iOS an installed app has its own storage,
+ * so it may know no unit: then the page explains how to re-add the app (new
+ * installs open on their unit directly).
  */
 function useStoredUnit() {
   const [unit, setUnit] = useState<{ slug: string; name: string } | null>(null);
+  const [strandedApp, setStrandedApp] = useState(false);
 
   useEffect(() => {
     let stored: { slug: string; name: string } | null = null;
@@ -65,7 +76,8 @@ function useStoredUnit() {
       return;
     }
     setUnit(stored);
+    setStrandedApp(fromPwa);
   }, []);
 
-  return unit;
+  return { unit, strandedApp };
 }
