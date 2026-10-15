@@ -15,11 +15,12 @@ export const Route = createFileRoute('/tessa')({
  * starts with `javascript:` (a "bookmarklet") runs its code in whatever tab
  * is open, so that is how the script gets there.
  *
- * Two bookmarks are offered:
- *  - "Laddare" is one line that fetches the latest script from this site.
- *    Update the file here and every TV picks it up on the next click.
- *  - "Fristående" carries the whole script inside the bookmark. Use it if
- *    TESSA's Content Security Policy or the hospital proxy blocks the first.
+ * The bookmark carries the whole script ("fristående"). The shorter loader,
+ * which fetches the script from this site, is blocked on the hospital PCs
+ * (TESSA's Content Security Policy or the proxy), so it is only offered as
+ * an alternative for other networks. Because the script lives inside the
+ * bookmark, a new version means dragging the bookmark in again; the version
+ * number in its name shows which one a TV has.
  */
 const SCRIPT_PATH = '/tessa/narkos-dagblad.js';
 
@@ -29,6 +30,7 @@ function loaderCode(origin: string) {
 
 function Tessa() {
   const [standalone, setStandalone] = useState<string | null>(null);
+  const [version, setVersion] = useState('');
   const [failed, setFailed] = useState(false);
   const loader = `javascript:${loaderCode(window.location.origin)}`;
 
@@ -40,7 +42,10 @@ function Tessa() {
       })
       // The script uses only /* */ comments, so it survives a browser
       // flattening the bookmark onto one line.
-      .then(code => setStandalone(`javascript:${encodeURIComponent(code)}`))
+      .then(code => {
+        setVersion(/Portrait TV\s+v([\d.]+)/.exec(code)?.[1] ?? '');
+        setStandalone(`javascript:${encodeURIComponent(code)}`);
+      })
       .catch(() => setFailed(true));
   }, []);
 
@@ -62,10 +67,15 @@ function Tessa() {
           bokmärkesfältet med Ctrl+Shift+B om det är dolt.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-4">
-          <Bookmarklet href={loader} label="📺 TV-läge" primary />
-          <span className="text-sm text-muted-foreground">Laddar alltid senaste versionen härifrån.</span>
+          {standalone ? (
+            <Bookmarklet href={standalone} label={`📺 TV-läge${version ? ` v${version}` : ''}`} primary />
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {failed ? 'Kunde inte hämta skriptet. Ladda om sidan.' : 'Hämtar skriptet…'}
+            </span>
+          )}
         </div>
-        <CopyRow value={loader} />
+        {standalone && <CopyRow value={standalone} />}
       </section>
 
       <section className="mt-10">
@@ -82,25 +92,21 @@ function Tessa() {
       </section>
 
       <section className="mt-10 rounded-xl border border-border bg-card p-6">
-        <h2 className="font-wide text-xl font-bold">Händer inget?</h2>
+        <h2 className="font-wide text-xl font-bold">Ny version</h2>
         <p className="mt-2 text-muted-foreground">
-          Sjukhusets nätverk eller TESSA:s säkerhetsinställningar kan stoppa laddaren. Använd då den
-          fristående versionen, som har hela skriptet i själva bokmärket. Den uppdateras inte av sig själv:
-          lägg till den på nytt när en ny version kommer.
+          Hela tavlan ligger i bokmärket, så den uppdateras inte av sig själv. Står det ett högre
+          versionsnummer här än på bokmärket: ta bort det gamla bokmärket och dra in knappen igen.
         </p>
-        <div className="mt-5 flex flex-wrap items-center gap-4">
-          {standalone ? (
-            <Bookmarklet href={standalone} label="📺 TV-läge (fristående)" />
-          ) : (
-            <span className="text-sm text-muted-foreground">
-              {failed ? 'Kunde inte hämta skriptet.' : 'Hämtar skriptet…'}
-            </span>
-          )}
-        </div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Felsökning: tryck F12 → Console efter klicket. Står det “Content Security Policy” blockerar TESSA
-          laddaren; står det ett nätverksfel når datorn inte anestesiapp.se.
-        </p>
+        <details className="mt-4 text-sm text-muted-foreground">
+          <summary className="cursor-pointer">Annan dator eller annat nätverk?</summary>
+          <p className="mt-2">
+            Utanför sjukhusets datorer kan en kort laddare fungera. Den hämtar alltid senaste versionen
+            härifrån, men stoppas av TESSA:s säkerhetsinställningar på sjukhusets nät.
+          </p>
+          <div className="mt-3">
+            <Bookmarklet href={loader} label="📺 TV-läge (laddare)" />
+          </div>
+        </details>
       </section>
 
       <p className="mt-12 text-sm text-muted-foreground">

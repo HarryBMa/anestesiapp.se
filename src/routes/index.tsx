@@ -41,6 +41,9 @@ function Home() {
         <a className="button" href="/lugn">
           Lugn
         </a>
+        <a className="button" href="/tessa">
+          TV-läge
+        </a>
       </nav>
     </main>
   );
