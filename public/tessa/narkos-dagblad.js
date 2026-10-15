@@ -1,5 +1,5 @@
 /* ============================================================
-   Narkos Dagblad — Portrait TV  v4.3
+   Narkos Dagblad — Portrait TV  v4.4
    DevTools Snippet for TESSA Dagblad (tessa.sematic.se)
    Read-only overlay: never writes, clicks or submits in TESSA.
    Designed for a 1080×1920 portrait screen, scales to any size.
@@ -9,14 +9,15 @@
   const KIOSK = true;          /* true = no buttons, hidden cursor. false = debug toggle visible */
   const SHORT_NAMES = true;    /* "Anna Karin Svensson" -> "Anna KS" */
   const HIDE_ABSENT_REASON = true; /* never show comments/reasons for absent staff */
-  const AUTO_TODAY = true;     /* keep the board on today's date (also at midnight) */
+  const AUTO_TODAY = true;     /* keep the board on the right day by itself */
+  const NEXT_DAY_AT = '00:00'; /* when to switch to tomorrow's Dagblad, e.g. '21:30' to show it in the evening */
   const FOLLOW_DAY = true;     /* dim finished shifts, move Kväll up when it starts, show time left */
   const NIGHT = ['21:30', '06:00']; /* dark, dim theme between these times (screen glare + burn-in) */
   const SHOW_DEFICIT = false;  /* TESSA's own warning counter in the header */
 
   /* ---------- re-run safety ---------- */
   if (window.__nk) { try { window.__nk.stop(); } catch (e) {} }
-  const state = { timers: [], obs: null, lastChange: null, lostAt: null };
+  const state = { timers: [], obs: null, lastChange: null, lostAt: null, want: null, tries: 0 };
 
   /* ---------- helpers ---------- */
   const $ = (s, r = document) => r.querySelector(s);
@@ -179,7 +180,10 @@
 
     const std = d.stdTime;
     const now = new Date();
-    const isToday = new URLSearchParams(location.search).get('viewDtm') == String(todayDtm());
+    const shown = headerDtm();
+    const dayTag = shown == null ? '' : shown === targetDtm()
+      ? (shown === todayDtm() + 1 ? ' <span class="nk-kv">I morgon</span>' : '')
+      : ' <span class="nk-warn">Fel dag</span>';
     if (!c.ok && !state.lostAt) state.lostAt = now;
     if (c.ok) state.lostAt = null;
     /* Meteor reconnects on its own after short blips, so only warn after a minute without contact. */
@@ -252,7 +256,7 @@
       <div class="nk-page">
         ${!lost ? '' : `<div class="nk-stale">${svg(IC.alert)}Ingen kontakt med TESSA sedan ${hm(state.lostAt)} – tavlan visar senast kända läge.</div>`}
         <header class="nk-top">
-          <div class="nk-date"><div class="nk-day">${esc(d.day)}${isToday ? '' : ' <span class="nk-warn">Ej idag</span>'}</div><div class="nk-dm">${esc(d.date)} · v.${esc(d.week)}</div></div>
+          <div class="nk-date"><div class="nk-day">${esc(d.day)}${dayTag}</div><div class="nk-dm">${esc(d.date)} · v.${esc(d.week)}</div></div>
           <div class="nk-right">
             ${SHOW_DEFICIT && d.deficit ? `<div class="nk-def">${svg(IC.alert)}${esc(d.deficit.replace(/⚠️|⚠/g, '').trim())}</div>` : ''}
             <div class="nk-clock">${hm(now)}</div>
@@ -408,18 +412,35 @@
     document.body.appendChild(b);
   }
 
-  /* ---------- keep on today (no reload, so the snippet survives) ---------- */
+  /* ---------- keep on the right day ----------
+     Which day TESSA shows is read from the Dagblad header itself, not the URL, so a URL change
+     that TESSA ignores is caught. First try TESSA's router; if the page still shows the wrong
+     day 30 s later, press TESSA's own day arrow, the same as a person would. Never reloads,
+     so the board keeps running. Gives up after four tries a day rather than looping. */
+  const MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
+  function headerDtm() {
+    const m = /(\d{1,2})\s+([a-zåäö]+)\s+(\d{4})/i.exec(txt(document, '.otb-main-name-header'));
+    const mi = m ? MONTHS.indexOf(m[2].toLowerCase()) : -1;
+    return mi < 0 ? null : Date.UTC(+m[3], mi, +m[1]) / 864e5;
+  }
+  function targetDtm() {
+    const at = mins(NEXT_DAY_AT);
+    return todayDtm() + (at > 0 && nowMins(new Date()) >= at ? 1 : 0);
+  }
   function ensureToday() {
     if (!AUTO_TODAY) return;
-    const want = String(todayDtm());
-    if (new URLSearchParams(location.search).get('viewDtm') === want) return;
+    const want = targetDtm();
+    const have = headerDtm() ?? +new URLSearchParams(location.search).get('viewDtm');
+    if (state.want !== want) { state.want = want; state.tries = 0; }
+    if (have === want || state.tries >= 4) return;
+    state.tries++;
     try {
-      if (window.FlowRouter?.setQueryParams) { FlowRouter.setQueryParams({ viewDtm: want }); return; }
+      if (state.tries === 1 && window.FlowRouter?.setQueryParams) { FlowRouter.setQueryParams({ viewDtm: String(want) }); return; }
     } catch (e) {}
-    if (sessionStorage.getItem('nk-jump') !== want) { /* last-resort fallback */
-      sessionStorage.setItem('nk-jump', want);
-      const u = new URL(location.href); u.searchParams.set('viewDtm', want); location.replace(u);
-    }
+    const step = want - have;
+    const arrow = step === 1 ? $('.js-select-next-day') : step === -1 ? $('.js-select-previous-day') : null;
+    if (arrow) arrow.click();
+    else { try { window.FlowRouter?.setQueryParams?.({ viewDtm: String(want) }); } catch (e) {} }
   }
 
   /* ---------- live updates ---------- */
@@ -442,5 +463,5 @@
     stop() { state.timers.forEach(clearInterval); state.obs?.disconnect(); removeEventListener('resize', fit); el.remove(); st.remove(); document.getElementById('nk-tg')?.remove(); },
     data: parse,
   };
-  console.log('%cNarkos Dagblad portrait v4.3 running', 'color:#40a02b;font-weight:bold');
+  console.log('%cNarkos Dagblad portrait v4.4 running', 'color:#40a02b;font-weight:bold');
 })();
