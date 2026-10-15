@@ -10,7 +10,7 @@ keeps living on the same domain under each unit's address (`/nks-hh`, `/orto` �
 | `/blodgas` | Blood gas interpretation: compensation, albumin-corrected anion gap, delta ratio, P/F, A–a gradient. kPa or mmHg. |
 | `/stewart` | Stewart acid–base analysis from a photo of an ABL90 FLEX PLUS printout, read on the device. Gamblegram and base-excess partition. |
 | `/lugn` | Patient-facing calm player: generated scenes and sound, breathing guide, optional videos. Swedish/English. |
-| `/tessa` | Setup page for the TESSA Dagblad corridor TV: bookmarklets that run `public/tessa/narkos-dagblad.js` inside the TESSA tab. |
+| `/tessa` | Setup page for the TESSA Dagblad corridor TV: a bookmarklet that carries `public/tessa/narkos-dagblad.js` and runs it inside the TESSA tab (a loader that fetches the script is blocked on the hospital PCs, so it is only an alternative). |
 
 Everything runs in the browser. No patient data is stored or sent.
 
