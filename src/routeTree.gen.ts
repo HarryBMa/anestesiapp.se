@@ -13,7 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlodgasRouteImport } from './routes/blodgas'
 import { Route as LugnRouteImport } from './routes/lugn'
 import { Route as StewartRouteImport } from './routes/stewart'
-import { Route as TessaRouteImport } from './routes/tessa'
+import { Route as ATessaRouteImport } from './routes/a/tessa'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,9 +35,9 @@ const StewartRoute = StewartRouteImport.update({
   path: '/stewart',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TessaRoute = TessaRouteImport.update({
-  id: '/tessa',
-  path: '/tessa',
+const ATessaRoute = ATessaRouteImport.update({
+  id: '/a/tessa',
+  path: '/a/tessa',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -46,14 +46,14 @@ export interface FileRoutesByFullPath {
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
   '/stewart': typeof StewartRoute
-  '/tessa': typeof TessaRoute
+  '/a/tessa': typeof ATessaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
   '/stewart': typeof StewartRoute
-  '/tessa': typeof TessaRoute
+  '/a/tessa': typeof ATessaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +61,14 @@ export interface FileRoutesById {
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
   '/stewart': typeof StewartRoute
-  '/tessa': typeof TessaRoute
+  '/a/tessa': typeof ATessaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/blodgas' | '/lugn' | '/stewart' | '/tessa'
+  fullPaths: '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/tessa'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blodgas' | '/lugn' | '/stewart' | '/tessa'
-  id: '__root__' | '/' | '/blodgas' | '/lugn' | '/stewart' | '/tessa'
+  to: '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/tessa'
+  id: '__root__' | '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/tessa'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,7 +76,7 @@ export interface RootRouteChildren {
   BlodgasRoute: typeof BlodgasRoute
   LugnRoute: typeof LugnRoute
   StewartRoute: typeof StewartRoute
-  TessaRoute: typeof TessaRoute
+  ATessaRoute: typeof ATessaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -109,11 +109,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StewartRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tessa': {
-      id: '/tessa'
-      path: '/tessa'
-      fullPath: '/tessa'
-      preLoaderRoute: typeof TessaRouteImport
+    '/a/tessa': {
+      id: '/a/tessa'
+      path: '/a/tessa'
+      fullPath: '/a/tessa'
+      preLoaderRoute: typeof ATessaRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -124,7 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlodgasRoute: BlodgasRoute,
   LugnRoute: LugnRoute,
   StewartRoute: StewartRoute,
-  TessaRoute: TessaRoute,
+  ATessaRoute: ATessaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
