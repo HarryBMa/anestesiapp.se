@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!hem-assets/|tessa/narkos-dagblad\\.js).*)",
+      "source": "/((?!hem-assets/|a/tessa/narkos-dagblad\\.js).*)",
       "destination": "/index.html"
     }
   ],
@@ -20,7 +20,7 @@
       ]
     },
     {
-      "source": "/tessa/narkos-dagblad.js",
+      "source": "/a/tessa/narkos-dagblad.js",
       "headers": [
         {
           "key": "cache-control",

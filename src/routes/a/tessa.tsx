@@ -1,15 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { Tag } from '../components/Tag';
+import { Tag } from '../../components/Tag';
 
-export const Route = createFileRoute('/tessa')({
+export const Route = createFileRoute('/a/tessa')({
   component: Tessa,
 });
 
 /**
  * Setup page for the TESSA Dagblad corridor display.
  *
- * The display itself is a plain script in public/tessa/narkos-dagblad.js.
+ * The display itself is a plain script in public/a/tessa/narkos-dagblad.js.
  * It has to run *inside* the TESSA tab: the browser's same-origin rule stops
  * any page on anestesiapp.se from reading TESSA. A bookmark whose address
  * starts with `javascript:` (a "bookmarklet") runs its code in whatever tab
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/tessa')({
  * bookmark, a new version means dragging the bookmark in again; the version
  * number in its name shows which one a TV has.
  */
-const SCRIPT_PATH = '/tessa/narkos-dagblad.js';
+const SCRIPT_PATH = '/a/tessa/narkos-dagblad.js';
 
 function loaderCode(origin: string) {
   return `(()=>{const s=document.createElement('script');s.src='${origin}${SCRIPT_PATH}?v='+Date.now();document.head.appendChild(s)})();`;

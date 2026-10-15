@@ -41,7 +41,7 @@ function Home() {
         <a className="button" href="/lugn">
           Lugn
         </a>
-        <a className="button" href="/tessa">
+        <a className="button" href="/a/tessa">
           TV-läge
         </a>
       </nav>
