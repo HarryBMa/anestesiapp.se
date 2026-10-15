@@ -1,5 +1,5 @@
 /* ============================================================
-   Narkos Dagblad — Portrait TV  v4.2
+   Narkos Dagblad — Portrait TV  v4.3
    DevTools Snippet for TESSA Dagblad (tessa.sematic.se)
    Read-only overlay: never writes, clicks or submits in TESSA.
    Designed for a 1080×1920 portrait screen, scales to any size.
@@ -10,6 +10,9 @@
   const SHORT_NAMES = true;    /* "Anna Karin Svensson" -> "Anna KS" */
   const HIDE_ABSENT_REASON = true; /* never show comments/reasons for absent staff */
   const AUTO_TODAY = true;     /* keep the board on today's date (also at midnight) */
+  const FOLLOW_DAY = true;     /* dim finished shifts, move Kväll up when it starts, show time left */
+  const NIGHT = ['21:30', '06:00']; /* dark, dim theme between these times (screen glare + burn-in) */
+  const SHOW_DEFICIT = false;  /* TESSA's own warning counter in the header */
 
   /* ---------- re-run safety ---------- */
   if (window.__nk) { try { window.__nk.stop(); } catch (e) {} }
@@ -137,13 +140,26 @@
     alert: 'M12 3.5 2.5 20h19L12 3.5zM12 10v4.5M12 17.3v.2',
   };
 
-  function person(r, std, colRole) {
+  /* ---------- the day's clock ---------- */
+  const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
+  function span(time) {
+    const [a, b] = (time || '').split(/[-–]/).map(x => mins(x.trim()));
+    if (a == null || b == null) return null;
+    return { s: a, e: b > a ? b : b + 1440 }; /* a night shift ends tomorrow */
+  }
+  const nowMins = d => d.getHours() * 60 + d.getMinutes();
+  const isNight = d => { const n = nowMins(d), [a, b] = NIGHT.map(mins); return a > b ? (n >= a || n < b) : (n >= a && n < b); };
+  const hhmmOf = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  const gone = (r, n) => { const sp = n >= 0 && span(r.time); return !!sp && n >= sp.e; };
+
+  function person(r, std, colRole, n) {
     const extra = r.roles.filter(x => x !== colRole);
     const badges = extra.map(x => `<span class="nk-b ${badgeCls[x] || 'b-usk'}">${esc(x)}</span>`).join('');
     const time = r.time && r.time !== std ? `<span class="nk-time">${svg(IC.clock)}${esc(r.time.replace(/-/, '–'))}</span>` : '';
     /* time sits on the second line so names never get cut off */
-    const sub = [time, r.note && `<span class="nk-note">${esc(r.note)}</span>`, r.comment && `<span class="nk-cmt">${esc(r.comment)}</span>`].filter(Boolean).join('');
-    return `<div class="nk-p${r.fiktiv ? ' fik' : ''}">
+    const left = gone(r, n) ? '<span class="nk-gone">Gått hem</span>' : '';
+    const sub = [left, time, r.note && `<span class="nk-note">${esc(r.note)}</span>`, r.comment && `<span class="nk-cmt">${esc(r.comment)}</span>`].filter(Boolean).join('');
+    return `<div class="nk-p${r.fiktiv ? ' fik' : ''}${left ? ' left' : ''}">
       <div class="nk-pl"><i class="nk-dot${r.online ? ' on' : ''}"></i><span class="nk-n">${esc(r.short)}</span>${badges}</div>
       ${sub ? `<div class="nk-sub">${sub}</div>` : ''}</div>`;
   }
@@ -168,6 +184,24 @@
     if (c.ok) state.lostAt = null;
     /* Meteor reconnects on its own after short blips, so only warn after a minute without contact. */
     const lost = !!state.lostAt && now - state.lostAt > 60000;
+    const night = isNight(now);
+    el.classList.toggle('night', night);
+    /* At night the day is over; showing everyone as "gone home" helps nobody, so the board rests. */
+    const follow = FOLLOW_DAY && !night;
+    const n = follow ? nowMins(now) : -1;
+
+    /* Each room's working span = earliest start to latest end among the people in it. */
+    d.rooms.forEach(r => {
+      const sp = [...r.op, ...r.ane].map(x => span(x.time)).filter(Boolean);
+      r.s = sp.length ? Math.min(...sp.map(x => x.s)) : null;
+      r.e = sp.length ? Math.max(...sp.map(x => x.e)) : null;
+      r.done = follow && r.e != null && n >= r.e;
+      r.started = !follow || r.s == null || n >= r.s;
+    });
+    /* Order: Kväll rooms jump to the top once Kväll has started; finished rooms sink to the bottom. */
+    const rank = r => !follow ? 0 : (r.done ? 2 : 0) + (r.kvall ? (r.started ? -1 : 1) : 0);
+    const rooms = d.rooms.map((r, i) => ({ r, i })).sort((a, b) => rank(a.r) - rank(b.r) || a.i - b.i).map(x => x.r);
+    const order = rooms.map(r => r.id + (r.kvall ? 'k' : '')).join();
 
     const lead = side => {
       const label = `<span class="nk-lt">VL ${side === 'ane' ? 'Ane' : 'Op'}</span>`;
@@ -177,24 +211,31 @@
       return rows.map(l => `<div class="nk-lead ${side}">${label}<span class="nk-ln">${esc(l.short)}</span>${tel(l.tel)}</div>`).join('');
     };
 
-    const room = r => `
-      <section class="nk-room${r.robot ? ' robot' : ''}${r.empty ? ' empty' : ''}">
+    const room = r => {
+      const left = r.e != null && r.started && !r.done ? r.e - n : null;
+      const p = r.s != null && r.e > r.s ? Math.min(1, Math.max(0, (n - r.s) / (r.e - r.s))) : 0;
+      const ends = left != null && left <= 60 ? `<div class="nk-ends${left <= 30 ? ' soon' : ''}">Slutar ${hhmmOf(r.e)}</div>` : '';
+      return `
+      <section class="nk-room${r.robot ? ' robot' : ''}${r.empty ? ' empty' : ''}${r.done ? ' done' : ''}" style="view-transition-name:nk-${esc(r.id)}${r.kvall ? 'k' : ''}">
         <div class="nk-rid">
           <div class="nk-num">${esc(r.id)}</div>
+          ${ends}
           ${r.kvall ? '<div><span class="nk-kv">Kväll</span></div>' : ''}
           ${r.ph.op.length ? `<div class="nk-rph"><b>Op</b><span>${r.ph.op.map(n => `<span>${esc(n)}</span>`).join('')}</span></div>` : ''}
           ${r.ph.ane.length ? `<div class="nk-rph"><b>Ane</b><span>${r.ph.ane.map(n => `<span>${esc(n)}</span>`).join('')}</span></div>` : ''}
         </div>
-        <div class="nk-col op"><div class="nk-ch">Op</div>${r.op.map(p => person(p, std, 'OP')).join('') || '<div class="nk-none">Ingen</div>'}</div>
-        <div class="nk-col ane"><div class="nk-ch">Ane</div>${r.ane.map(p => person(p, std, 'ANE')).join('') || '<div class="nk-none">Ingen</div>'}</div>
+        <div class="nk-col op"><div class="nk-ch">Op</div>${r.op.map(x => person(x, std, 'OP', r.done ? -1 : n)).join('') || '<div class="nk-none">Ingen</div>'}</div>
+        <div class="nk-col ane"><div class="nk-ch">Ane</div>${r.ane.map(x => person(x, std, 'ANE', r.done ? -1 : n)).join('') || '<div class="nk-none">Ingen</div>'}</div>
         ${r.bulletin ? `<div class="nk-bull">${esc(r.bulletin)}</div>` : ''}
+        ${follow && r.started && !r.done && r.e != null ? `<div class="nk-prog${left != null && left <= 30 ? ' soon' : ''}" style="--p:${p.toFixed(3)}"></div>` : ''}
       </section>`;
+    };
 
     const pool = p => `
       <section class="nk-pool${p.rows.length ? '' : ' empty'}">
         <h3>${esc(p.name)}${p.kvall ? '<span class="nk-kv">Kväll</span>' : ''}</h3>
         ${p.bulletin ? `<div class="nk-bull">${esc(p.bulletin)}</div>` : ''}
-        ${p.rows.map(x => person(x, std, null)).join('') || '<div class="nk-none">Ingen</div>'}
+        ${p.rows.map(x => person(x, std, null, n)).join('') || '<div class="nk-none">Ingen</div>'}
       </section>`;
 
     const absent = d.absent.length ? `
@@ -207,24 +248,38 @@
       ? `<i class="nk-dot on"></i> Live från TESSA${state.lastChange ? ` · senaste ändring ${hm(state.lastChange)}` : ''}`
       : `<i class="nk-dot"></i> Ingen kontakt med TESSA sedan ${hm(state.lostAt)}`;
 
-    el.innerHTML = `
+    const html = `
       <div class="nk-page">
         ${!lost ? '' : `<div class="nk-stale">${svg(IC.alert)}Ingen kontakt med TESSA sedan ${hm(state.lostAt)} – tavlan visar senast kända läge.</div>`}
         <header class="nk-top">
           <div class="nk-date"><div class="nk-day">${esc(d.day)}${isToday ? '' : ' <span class="nk-warn">Ej idag</span>'}</div><div class="nk-dm">${esc(d.date)} · v.${esc(d.week)}</div></div>
           <div class="nk-right">
-            ${d.deficit ? `<div class="nk-def">${svg(IC.alert)}${esc(d.deficit.replace(/⚠️|⚠/g, '').trim())}</div>` : ''}
+            ${SHOW_DEFICIT && d.deficit ? `<div class="nk-def">${svg(IC.alert)}${esc(d.deficit.replace(/⚠️|⚠/g, '').trim())}</div>` : ''}
             <div class="nk-clock">${hm(now)}</div>
           </div>
         </header>
         <div class="nk-leads">${lead('ane')}${lead('op')}</div>
         ${std ? `<div class="nk-std">Standardpass ${esc(std.replace(/-/, '–'))} · bara avvikande tider visas</div>` : ''}
-        <main class="nk-rooms">${d.rooms.map(room).join('')}</main>
+        <main class="nk-rooms">${rooms.map(room).join('')}</main>
         <div class="nk-pools">${d.pools.map(pool).join('')}</div>
         ${absent}
         <div class="nk-upd">${status} <span class="nk-sep">·</span> <i class="nk-dot on"></i> inloggad <i class="nk-dot"></i> ej inloggad</div>
       </div>`;
-    fit();
+    /* When rooms change place (Kväll starting, a room finishing), let them glide to the new spot. */
+    const reorder = state.order && state.order !== order;
+    state.order = order;
+    const paint = () => { el.innerHTML = html; fit(); shift(); };
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reorder && !calm && document.startViewTransition) document.startViewTransition(paint); else paint();
+  }
+
+  /* A static picture on a TV for weeks can burn in. Every ten minutes the page moves two pixels
+     around a small square; nobody notices, the panel does. */
+  function shift() {
+    const step = Math.floor(Date.now() / 600000) % 4;
+    const [x, y] = [[0, 0], [2, 0], [2, 2], [0, 2]][step];
+    const page = document.querySelector('#nk .nk-page');
+    if (page) page.style.transform = `translate(${x}px, ${y}px)`;
   }
 
   /* Scale to the screen, then shrink only as far as stays readable from the corridor.
@@ -251,7 +306,7 @@
   const css = `
   #nk{--base:#eff1f5;--mantle:#e6e9ef;--crust:#dce0e8;--s1:#bcc0cc;--text:#4c4f69;--sub:#5c5f77;
     --op:#2a731c;--ane:#1650d4;--usk:#0d6e73;--stod:#6b21c8;--time:#a8420a;--note:#3d4cc0;--warn:#a8420a;--red:#b0102f;
-    --live:#40a02b;--kv:#5b67c9;--note-bg:#f6e9d3;--note-ink:#7a4f0c;
+    --live:#40a02b;--kv:#5b67c9;--note-bg:#f6e9d3;--note-ink:#7a4f0c;--card:#fff;--abs-bg:#f9e6ea;--badge-ink:#fff;--track:#dce0e8;
     --u:1px;position:fixed;inset:0;z-index:2147483646;background:var(--base);color:var(--text);overflow:hidden;
     font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;
     font-size:calc(var(--u)*26);line-height:1.25;-webkit-font-smoothing:antialiased;${KIOSK ? 'cursor:none;' : ''}}
@@ -276,9 +331,26 @@
   #nk .nk-tel .nk-ic{width:.8em;height:.8em}
   #nk .nk-std{font-size:calc(var(--u)*20);color:var(--sub);text-align:right;margin-top:calc(var(--u)*-4)}
   #nk .nk-rooms{display:flex;flex-direction:column;gap:calc(var(--u)*12)}
-  #nk .nk-room{display:grid;grid-template-columns:calc(var(--u)*220) 1.15fr 1fr;background:#fff;border-radius:calc(var(--u)*22);
+  #nk .nk-room{display:grid;grid-template-columns:calc(var(--u)*220) 1.15fr 1fr;background:var(--card);position:relative;border-radius:calc(var(--u)*22);
     box-shadow:0 calc(var(--u)*2) calc(var(--u)*10) #4c4f6914;overflow:hidden}
   #nk .nk-room.empty{opacity:.5}
+  #nk .nk-room.done{opacity:.7}
+  #nk .nk-prog{position:absolute;left:calc(var(--u)*220);right:0;bottom:0;height:calc(var(--u)*5);background:var(--track)}
+  #nk .nk-prog::after{content:"";position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--p));background:var(--sub);transition:transform 1s ease-out}
+  #nk .nk-prog.soon::after{background:var(--warn)}
+  #nk .nk-ends{font-size:calc(var(--u)*20);font-weight:800;color:var(--sub)}
+  #nk .nk-ends.soon{color:var(--warn)}
+  #nk .nk-p.left{opacity:.7}
+  #nk .nk-gone{font-size:calc(var(--u)*20);font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.06em}
+  #nk .nk-page{transition:transform 2s ease-in-out}
+  ::view-transition-group(*){animation-duration:.9s;animation-timing-function:cubic-bezier(.25,1,.5,1)}
+  @media (prefers-reduced-motion: reduce){#nk .nk-page,#nk .nk-prog::after{transition:none}}
+  /* Night: Catppuccin Mocha, so a lit corridor TV doesn't glare at 3 am. All pairs AA. */
+  #nk.night{--base:#1e1e2e;--mantle:#181825;--crust:#11111b;--s1:#45475a;--text:#cdd6f4;--sub:#a6adc8;
+    --op:#a6e3a1;--ane:#89b4fa;--usk:#94e2d5;--stod:#cba6f7;--time:#fab387;--note:#b4befe;--warn:#fab387;--red:#f38ba8;
+    --live:#a6e3a1;--kv:#b4befe;--note-bg:#3b3529;--note-ink:#f9e2af;--card:#262637;--abs-bg:#2e2433;--badge-ink:#11111b;--track:#313244}
+  #nk.night .nk-kv,#nk.night .nk-warn,#nk.night .nk-stale{color:#11111b}
+  #nk.night .nk-pool.empty,#nk.night .nk-room.empty{opacity:.85}
   #nk .nk-rid{background:var(--mantle);padding:calc(var(--u)*16) calc(var(--u)*20);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*5)}
   #nk .nk-num{font-size:calc(var(--u)*64);font-weight:800;letter-spacing:-.03em;line-height:1}
   #nk .robot .nk-num{font-size:calc(var(--u)*46)}
@@ -295,7 +367,7 @@
   #nk .fik .nk-n{font-style:italic;color:var(--sub);font-weight:500}
   #nk .nk-dot{flex:none;width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:50%;background:var(--s1)}
   #nk .nk-dot.on{background:var(--live)}
-  #nk .nk-b{flex:none;font-size:calc(var(--u)*18);font-weight:800;letter-spacing:.04em;border-radius:calc(var(--u)*7);padding:.12em .42em;color:#fff}
+  #nk .nk-b{flex:none;font-size:calc(var(--u)*18);font-weight:800;letter-spacing:.04em;border-radius:calc(var(--u)*7);padding:.12em .42em;color:var(--badge-ink)}
   #nk .b-ane{background:var(--ane)} #nk .b-op{background:var(--op)} #nk .b-usk{background:var(--usk)} #nk .b-stod{background:var(--stod)}
   #nk .nk-sub{display:flex;flex-wrap:wrap;align-items:baseline;gap:calc(var(--u)*4) calc(var(--u)*12);padding-left:calc(var(--u)*23);margin-top:calc(var(--u)*2);line-height:1.3}
   #nk .nk-time{display:inline-flex;align-items:center;gap:.25em;font-size:calc(var(--u)*23);font-weight:700;color:var(--time)}
@@ -312,9 +384,9 @@
   #nk .nk-pool.empty{opacity:.6}
   #nk .nk-pool h3{font-size:calc(var(--u)*19);font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--sub)}
   #nk .nk-pool .nk-n{font-size:calc(var(--u)*28)}
-  #nk .nk-abs{display:flex;flex-wrap:wrap;align-items:center;gap:calc(var(--u)*8) calc(var(--u)*10);background:#f9e6ea;border-radius:calc(var(--u)*18);padding:calc(var(--u)*14) calc(var(--u)*20)}
+  #nk .nk-abs{display:flex;flex-wrap:wrap;align-items:center;gap:calc(var(--u)*8) calc(var(--u)*10);background:var(--abs-bg);border-radius:calc(var(--u)*18);padding:calc(var(--u)*14) calc(var(--u)*20)}
   #nk .nk-at{font-size:calc(var(--u)*19);font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--red);margin-right:calc(var(--u)*6)}
-  #nk .nk-ai{font-size:calc(var(--u)*25);color:var(--text);background:#fff;border-radius:999px;padding:.1em .65em;text-decoration:line-through;text-decoration-color:#b0102f80;text-decoration-thickness:.08em}
+  #nk .nk-ai{font-size:calc(var(--u)*25);color:var(--text);background:var(--card);border-radius:999px;padding:.1em .65em;text-decoration:line-through;text-decoration-color:#b0102f80;text-decoration-thickness:.08em}
   #nk .nk-upd{font-size:calc(var(--u)*18);color:var(--sub);display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*7)}
   #nk .nk-upd .nk-dot{width:calc(var(--u)*11);height:calc(var(--u)*11)}
   #nk .nk-sep{margin:0 calc(var(--u)*6)}
@@ -370,5 +442,5 @@
     stop() { state.timers.forEach(clearInterval); state.obs?.disconnect(); removeEventListener('resize', fit); el.remove(); st.remove(); document.getElementById('nk-tg')?.remove(); },
     data: parse,
   };
-  console.log('%cNarkos Dagblad portrait v4.2 running', 'color:#40a02b;font-weight:bold');
+  console.log('%cNarkos Dagblad portrait v4.3 running', 'color:#40a02b;font-weight:bold');
 })();
