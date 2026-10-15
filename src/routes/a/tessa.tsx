@@ -91,6 +91,26 @@ function Tessa() {
         </p>
       </section>
 
+      <section className="mt-10">
+        <h2 className="font-wide text-xl font-bold">Lunchkoder</h2>
+        <p className="mt-2 text-muted-foreground">
+          Skriv en kod i anteckningen eller kommentaren i TESSA hos den som löser av, så visas lunchen
+          på salen i stället för som text: <strong className="text-foreground">L</strong> + salens sista
+          siffror, gärna med tid.
+        </p>
+        <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-sm sm:grid-cols-3">
+          <li>L1 → 3701</li>
+          <li>L3 → 3703</li>
+          <li>L4 → 3704</li>
+          <li>L11 → 3711</li>
+          <li>LR → Robot</li>
+          <li>L1 11.30 → med tid</li>
+        </ul>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Flera går bra (”L3 L4”). Hela salsnumret fungerar också (”L3701”).
+        </p>
+      </section>
+
       <section className="mt-10 rounded-xl border border-border bg-card p-6">
         <h2 className="font-wide text-xl font-bold">Ny version</h2>
         <p className="mt-2 text-muted-foreground">
