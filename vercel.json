@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!hem-assets/|blindtest/|a/tessa/narkos-dagblad\\.js).*)",
+      "source": "/((?!hem-assets/|a/blindtest/|a/tessa/narkos-dagblad\\.js).*)",
       "destination": "/index.html"
     }
   ],

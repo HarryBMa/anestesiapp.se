@@ -37,7 +37,7 @@ function Home() {
         <a className="button" href="/a/tessa">
           TV-läge
         </a>
-        <a className="button" href="/blindtest/">
+        <a className="button" href="/a/blindtest/">
           Lyssningstest
         </a>
       </nav>
