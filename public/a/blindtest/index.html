@@ -21,6 +21,7 @@ No right answers — pick what sounds cleaner, or “same”.</p>
 <div class=card id=test>
   <div class=muted id=head></div>
   <progress id=prog value=0 max=1></progress>
+  <p class=muted id=busy></p>
   <div class=row>
     <button id=p1>▶ Play 1</button>
     <button id=p2>▶ Play 2</button>
@@ -42,21 +43,33 @@ No right answers — pick what sounds cleaner, or “same”.</p>
 <script>
 const PAIRS = [{"a": "clips/00_rb3.flac", "b": "clips/00_ds.flac"}, {"a": "clips/01_ds.flac", "b": "clips/01_rb3.flac"}, {"a": "clips/00_ds.flac", "b": "clips/00_bungee.flac"}, {"a": "clips/02_ds.flac", "b": "clips/02_rb3.flac"}, {"a": "clips/06_bungee.flac", "b": "clips/06_ds.flac"}, {"a": "clips/03_rb3.flac", "b": "clips/03_ds.flac"}, {"a": "clips/02_bungee.flac", "b": "clips/02_ds.flac"}, {"a": "clips/09_rb3.flac", "b": "clips/09_ds.flac"}, {"a": "clips/05_ds.flac", "b": "clips/05_bungee.flac"}, {"a": "clips/11_ds.flac", "b": "clips/11_rb3.flac"}, {"a": "clips/07_ds.flac", "b": "clips/07_bungee.flac"}, {"a": "clips/07_rb3.flac", "b": "clips/07_ds.flac"}, {"a": "clips/04_ds.flac", "b": "clips/04_rb3.flac"}, {"a": "clips/10_rb3.flac", "b": "clips/10_ds.flac"}, {"a": "clips/04_ds.flac", "b": "clips/04_bungee.flac"}, {"a": "clips/05_rb3.flac", "b": "clips/05_ds.flac"}, {"a": "clips/11_ds.flac", "b": "clips/11_bungee.flac"}, {"a": "clips/08_bungee.flac", "b": "clips/08_ds.flac"}, {"a": "clips/10_bungee.flac", "b": "clips/10_ds.flac"}, {"a": "clips/03_ds.flac", "b": "clips/03_bungee.flac"}, {"a": "clips/08_ds.flac", "b": "clips/08_rb3.flac"}, {"a": "clips/09_bungee.flac", "b": "clips/09_ds.flac"}, {"a": "clips/06_ds.flac", "b": "clips/06_rb3.flac"}, {"a": "clips/01_bungee.flac", "b": "clips/01_ds.flac"}], CREDITS = [{"artist": "BLACK BOX", "title": "BLACK BOX - Totemism", "licence": "http://creativecommons.org/licenses/by/3.0/"}, {"artist": "Oleja Kaba", "title": "Hogus (Radio Edit)", "licence": "http://creativecommons.org/licenses/by-nc-nd/3.0/"}, {"artist": "XL Ant", "title": "No-Trace Land", "licence": ""}, {"artist": "Dj-Nen", "title": "Red Summer", "licence": "http://creativecommons.org/licenses/by-nd/3.0/"}, {"artist": "Igor Pumphonia", "title": "Igor Pumphonia - Going On", "licence": "http://creativecommons.org/licenses/by-nc-nd/3.0/"}, {"artist": "Becays", "title": "Pressures", "licence": "http://creativecommons.org/licenses/by-nc-sa/3.0/"}, {"artist": "KniPPi Fox", "title": "KniPPi Fox - Breath of Air ( No Vocal )", "licence": "http://creativecommons.org/licenses/by-sa/3.0/"}, {"artist": "DestructMarble250", "title": "Solfeyno", "licence": "http://creativecommons.org/licenses/by-nc-nd/3.0/"}, {"artist": "The.madpix.project", "title": "Go Away", "licence": "http://creativecommons.org/licenses/by-nc-nd/3.0/"}, {"artist": "Revolution Void", "title": "Factum par Fictio", "licence": "http://creativecommons.org/licenses/by-nc-nd/3.0/"}, {"artist": "Zeropage", "title": "Trance Etude 2", "licence": "http://creativecommons.org/licenses/by/3.0/"}, {"artist": "RunJoeRun", "title": "Loving This Beat Loving You (ext)", "licence": "http://creativecommons.org/licenses/by-nd/3.0/"}];
 let i = 0, votes = JSON.parse(localStorage.getItem('abv') || '[]');
-let ctx, buf = {}, src = null, gain = null, playing = 0, startedAt = 0, offset = 0;
-const $ = id => document.getElementById(id);
+let ctx, buf = {}, src = null, gain = null, playing = 0, startedAt = 0, offset = 0, ready = false;
 async function loadPair() {
   if (i >= PAIRS.length) return finish();
   $('head').textContent = `Clip ${i + 1} of ${PAIRS.length}`;
   $('prog').value = i / PAIRS.length;
+  ready = false; setBusy('Laddar ljud…');
   ctx = ctx || new AudioContext();
   buf = {};
-  for (const s of ['1', '2']) {
-    const r = await fetch(PAIRS[i][s === '1' ? 'a' : 'b']);
-    buf[s] = await ctx.decodeAudioData(await r.arrayBuffer());
+  try {
+    for (const s of ['1', '2']) {
+      const r = await fetch(PAIRS[i][s === '1' ? 'a' : 'b']);
+      if (!r.ok) throw new Error(r.status + ' ' + PAIRS[i][s === '1' ? 'a' : 'b']);
+      buf[s] = await ctx.decodeAudioData(await r.arrayBuffer());
+    }
+  } catch (e) {
+    setBusy('Kunde inte ladda ljudet: ' + e.message + ' — ladda om sidan.');
+    return;
   }
+  ready = true; setBusy('');
 }
-function play(side) {
-  if (!buf[side]) return;
+function setBusy(msg) {                    /* empty msg = ready to play */
+  $('busy').textContent = msg;
+  for (const id of ['p1', 'p2', 'stop', 'v1', 'vs', 'v2']) $(id).disabled = !!msg;
+}
+async function play(side) {
+  if (!ready || !buf[side]) return;
+  if (ctx.state === 'suspended') await ctx.resume();   /* phones start the context suspended */
   const pos = playing ? (ctx.currentTime - startedAt + offset) % buf[side].duration : offset;
   stop(true);
   src = ctx.createBufferSource(); src.buffer = buf[side]; src.loop = true;
@@ -70,6 +83,7 @@ function stop(keep) {
   if (!keep) { offset = 0; playing = 0; $('p1').classList.remove('on'); $('p2').classList.remove('on'); }
 }
 async function vote(v) {
+  if (!ready) return;
   stop();
   votes[i] = v; localStorage.setItem('abv', JSON.stringify(votes));
   i++; await loadPair();
