@@ -37,6 +37,9 @@ function Home() {
         <a className="button" href="/a/tessa">
           TV-läge
         </a>
+        <a className="button" href="/blindtest/">
+          Lyssningstest
+        </a>
       </nav>
     </main>
   );
