@@ -10,6 +10,8 @@ keeps living on the same domain under each unit's address (`/nks-hh`, `/orto` �
 | `/blodgas` | Blood gas interpretation: compensation, albumin-corrected anion gap, delta ratio, P/F, A–a gradient. kPa or mmHg. |
 | `/stewart` | Stewart acid–base analysis from a photo of an ABL90 FLEX PLUS printout, read on the device. Gamblegram and base-excess partition. |
 | `/lugn` | Patient-facing calm player: generated scenes and sound, breathing guide, optional videos. Swedish/English. |
+| `/a/greentiva` | GreenTIVA phase 1: compares ways of preparing single-use propofol and remifentanil containers from the rates you enter, to cut discarded drug and plastic. Planning estimate only: no PK/TCI model, never suggests a dose. Engines in `src/greentiva/`, design in `docs/greentiva/ARCHITECTURE.md`. |
+| `/a/greentiva-plan` | The GreenTIVA architecture and validation plan, rendered from the markdown. |
 | `/a/tessa` | Setup page for the TESSA Dagblad corridor TV: a bookmarklet that carries `public/a/tessa/narkos-dagblad.js` and runs it inside the TESSA tab (a loader that fetches the script is blocked on the hospital PCs, so it is only an alternative). |
 
 Everything runs in the browser. No patient data is stored or sent.
