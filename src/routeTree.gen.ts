@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlodgasRouteImport } from './routes/blodgas'
 import { Route as LugnRouteImport } from './routes/lugn'
 import { Route as StewartRouteImport } from './routes/stewart'
+import { Route as AGreentivaRouteImport } from './routes/a/greentiva'
 import { Route as ATessaRouteImport } from './routes/a/tessa'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const StewartRoute = StewartRouteImport.update({
   path: '/stewart',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AGreentivaRoute = AGreentivaRouteImport.update({
+  id: '/a/greentiva',
+  path: '/a/greentiva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ATessaRoute = ATessaRouteImport.update({
   id: '/a/tessa',
   path: '/a/tessa',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
   '/stewart': typeof StewartRoute
+  '/a/greentiva': typeof AGreentivaRoute
   '/a/tessa': typeof ATessaRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
   '/stewart': typeof StewartRoute
+  '/a/greentiva': typeof AGreentivaRoute
   '/a/tessa': typeof ATessaRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,23 @@ export interface FileRoutesById {
   '/blodgas': typeof BlodgasRoute
   '/lugn': typeof LugnRoute
   '/stewart': typeof StewartRoute
+  '/a/greentiva': typeof AGreentivaRoute
   '/a/tessa': typeof ATessaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/tessa'
+  fullPaths:
+    '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/greentiva' | '/a/tessa'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/tessa'
-  id: '__root__' | '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/tessa'
+  to: '/' | '/blodgas' | '/lugn' | '/stewart' | '/a/greentiva' | '/a/tessa'
+  id:
+    | '__root__'
+    | '/'
+    | '/blodgas'
+    | '/lugn'
+    | '/stewart'
+    | '/a/greentiva'
+    | '/a/tessa'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +93,7 @@ export interface RootRouteChildren {
   BlodgasRoute: typeof BlodgasRoute
   LugnRoute: typeof LugnRoute
   StewartRoute: typeof StewartRoute
+  AGreentivaRoute: typeof AGreentivaRoute
   ATessaRoute: typeof ATessaRoute
 }
 
@@ -109,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StewartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/a/greentiva': {
+      id: '/a/greentiva'
+      path: '/a/greentiva'
+      fullPath: '/a/greentiva'
+      preLoaderRoute: typeof AGreentivaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/a/tessa': {
       id: '/a/tessa'
       path: '/a/tessa'
@@ -124,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlodgasRoute: BlodgasRoute,
   LugnRoute: LugnRoute,
   StewartRoute: StewartRoute,
+  AGreentivaRoute: AGreentivaRoute,
   ATessaRoute: ATessaRoute,
 }
 export const routeTree = rootRouteImport
